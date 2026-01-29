@@ -1,0 +1,66 @@
+name: build and deploy front
+on: [push]
+
+jobs:
+  # job 1
+  build:
+    name: Build front job
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build front project
+        run: npm run build
+
+      - name: Create directory for uploading artifacts
+        run: mkdir staging && cp -r build/* staging
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: front-build
+          path: staging
+          if-no-files-found: error
+          retention-days: 5
+
+      - name: Show uploaded artifacts
+        run: ls staging/
+
+      - run: echo "🍏 This job's status is ${{ job.status }}."
+
+  # job 2
+  check:
+    name: analysis job
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: echo "🐧 Analysis job executed successfully"
+
+  # job 3
+  deploy:
+    name: deploy job
+    needs: [build, check]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: front-build
+
+      - name: Show downloaded files
+        run: pwd && ls .
